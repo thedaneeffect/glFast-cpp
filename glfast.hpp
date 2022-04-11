@@ -72,6 +72,7 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 typedef uint8_t u8;
+typedef uint8_t b8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
@@ -562,55 +563,29 @@ gpu_storage_t gfStorageCreateFromStruct(gpu_storage_t tbo) {
 	u32 elem_width = 0;
 	u32 elem_bytes = 0;
 
-#define CASE(value, width, type) case(value): elem_width = width; elem_bytes = sizeof(type); break
+#define CASE(value, width, type) \
+	case(value): elem_width = width; elem_bytes = sizeof(type); break;
+
+#define OF_TYPE(type) \
+	CASE(X_##type, 1, type) \
+	CASE(XY_##type, 2, type) \
+	CASE(XYZ_##type, 3, type) \
+	CASE(XYZW_##type, 4, type)
+
 	switch (tbo.format) {
-		CASE(X_b8, 1, u8);
-		CASE(XY_b8, 2, u8);
-		CASE(XYZ_b8, 3, u8);
-		CASE(XYZW_b8, 4, u8);
-
-		CASE(X_i8, 1, i8);
-		CASE(XY_i8, 2, i8);
-		CASE(XYZ_i8, 3, i8);
-		CASE(XYZW_i8, 4, i8);
-
-		CASE(X_u8, 1, u8);
-		CASE(XY_u8, 2, u8);
-		CASE(XYZ_u8, 3, u8);
-		CASE(XYZW_u8, 4, u8);
-
-		CASE(X_i16, 1, i16);
-		CASE(XY_i16, 2, i16);
-		CASE(XYZ_i16, 3, i16);
-		CASE(XYZW_i16, 4, i16);
-
-		CASE(X_u16, 1, u16);
-		CASE(XY_u16, 2, u16);
-		CASE(XYZ_u16, 3, u16);
-		CASE(XYZW_u16, 4, u16);
-
-		CASE(X_f16, 1, f16);
-		CASE(XY_f16, 2, f16);
-		CASE(XYZ_f16, 3, f16);
-		CASE(XYZW_f16, 4, f16);
-
-		CASE(X_i32, 1, i32);
-		CASE(XY_i32, 2, i32);
-		CASE(XYZ_i32, 3, i32);
-		CASE(XYZW_i32, 4, i32);
-
-		CASE(X_u32, 1, u32);
-		CASE(XY_u32, 2, u32);
-		CASE(XYZ_u32, 3, u32);
-		CASE(XYZW_u32, 4, u32);
-
-		CASE(X_f32, 1, f32);
-		CASE(XY_f32, 2, f32);
-		CASE(XYZ_f32, 3, f32);
-		CASE(XYZW_f32, 4, f32);
+		OF_TYPE(b8);
+		OF_TYPE(i8);
+		OF_TYPE(u8);
+		OF_TYPE(i16);
+		OF_TYPE(u16);
+		OF_TYPE(f16);
+		OF_TYPE(i32);
+		OF_TYPE(u32);
+		OF_TYPE(f32);
 	default:
 		gfError(__FUNCTION__, "Error: Wrong TBO format");
 	}
+#undef OF_TYPE
 #undef CASE
 
 	if (!tbo.bytes)
