@@ -5,6 +5,9 @@
 #endif
 
 #include <SDL2/SDL.h>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 const char* GL_EXTENSIONS[] =
 {
@@ -430,50 +433,6 @@ void glInit() {
 
 // TYPES ///////////////////////////////////////////////////////////////////////
 
-#define UNION(type, ...) union { type __VA_ARGS__; }
-#define VEC(type) \
-struct vec2_##type { \
-	UNION(type, x, s, u); \
-	UNION(type, y, t, v); \
-}; \
-struct vec3_##type { \
-	UNION(type, x, r, s, u); \
-	UNION(type, y, g, t, v); \
-	UNION(type, z, b, q, w); \
-}; \
-struct vec4_##type { \
-	UNION(type, x, r, s); \
-	UNION(type, y, g, t); \
-	UNION(type, z, b, q); \
-	UNION(type, w, a); \
-}
-
-VEC(i8);
-VEC(u8);
-VEC(i16);
-VEC(u16);
-VEC(i32);
-VEC(u32);
-VEC(i64);
-VEC(u64);
-VEC(f32);
-VEC(f64);
-
-#undef UNION
-#undef VEC
-
-#define C(w) \
-vec##w##_i8* as_vec##w##_i8; \
-vec##w##_u8* as_vec##w##_u8; \
-vec##w##_i16* as_vec##w##_i16; \
-vec##w##_u16* as_vec##w##_u16; \
-vec##w##_i32* as_vec##w##_i32; \
-vec##w##_u32* as_vec##w##_u32; \
-vec##w##_i64* as_vec##w##_i64; \
-vec##w##_u64* as_vec##w##_u64; \
-vec##w##_f32* as_vec##w##_f32; \
-vec##w##_f64* as_vec##w##_f64
-
 struct gpu_storage_t {
 	union {
 		u8* ptr;
@@ -484,10 +443,41 @@ struct gpu_storage_t {
 		i32* as_i32;
 		u32* as_u32;
 		f32* as_f32;
-		C(2);
-		C(3);
-		C(4);
+
+		glm::i8vec2* as_i8vec2;
+		glm::u8vec2* as_u8vec2;
+		glm::i16vec2* as_i16vec2;
+		glm::u16vec2* as_u16vec2;
+		glm::i32vec2* as_i32vec2;
+		glm::u32vec2* as_u32vec2;
+		glm::i64vec2* as_i64vec2;
+		glm::u64vec2* as_u64vec2;
+		glm::vec2* as_f32vec2;
+		glm::dvec2* as_f64vec2;
+
+		glm::i8vec3* as_i8vec3;
+		glm::u8vec3* as_u8vec3;
+		glm::i16vec3* as_i16vec3;
+		glm::u16vec3* as_u16vec3;
+		glm::i32vec3* as_i32vec3;
+		glm::u32vec3* as_u32vec3;
+		glm::i64vec3* as_i64vec3;
+		glm::u64vec3* as_u64vec3;
+		glm::vec3* as_f32vec3;
+		glm::dvec3* as_f64vec3;
+
+		glm::i8vec4* as_i8vec4;
+		glm::u8vec4* as_u8vec4;
+		glm::i16vec4* as_i16vec4;
+		glm::u16vec4* as_u16vec4;
+		glm::i32vec4* as_i32vec4;
+		glm::u32vec4* as_u32vec4;
+		glm::i64vec4* as_i64vec4;
+		glm::u64vec4* as_u64vec4;
+		glm::vec4* as_f32vec4;
+		glm::dvec4* as_f64vec4;
 	};
+
 	u32 bytes;
 	u32 count;
 	u32 format;
@@ -857,12 +847,11 @@ void gfDraw(u32 program_pipeline, u32 gpu_cmd_count, const gpu_cmd_t* gpu_cmd) {
 }
 
 void gfFire(u32 program_pipeline, u32 count) {
-	gpu_cmd_t cmd{
-		.count = count,
-		.instance_count = 1,
-		.first = 0,
-		.instance_first = 0,
-	};
+	gpu_cmd_t cmd;
+	cmd.first = 0;
+	cmd.count = count;
+	cmd.instance_first = 0;
+	cmd.instance_count = 1;
 	gfDraw(program_pipeline, 1, &cmd);
 }
 
