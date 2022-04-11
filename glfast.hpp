@@ -9,6 +9,8 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#include <list>
+
 const char* GL_EXTENSIONS[] =
 {
 #ifndef RELEASE
@@ -270,6 +272,8 @@ void (*glProgramUniform3fv)(u32 program, i32 location, i32 count, const f32* val
 
 void (*glProgramUniform4fv)(u32 program, i32 location, i32 count, const f32* value);
 
+void (*glProgramUniformMatrix4fv)(u32 program, i32 location, i32 count, u8 transpose, const f32* value);
+
 typedef void (*GLCLEARPROC)(u32 mask);
 typedef void (*GLFINISHPROC)();
 typedef void (*GLENABLEPROC)(u32 cap);
@@ -310,6 +314,7 @@ typedef void (*GLPROGRAMUNIFORM1FVPROC)(u32 program, i32 location, i32 count, co
 typedef void (*GLPROGRAMUNIFORM2FVPROC)(u32 program, i32 location, i32 count, const f32* value);
 typedef void (*GLPROGRAMUNIFORM3FVPROC)(u32 program, i32 location, i32 count, const f32* value);
 typedef void (*GLPROGRAMUNIFORM4FVPROC)(u32 program, i32 location, i32 count, const f32* value);
+typedef void (*GLPROGRAMUNIFORMMATRIX4FVPROC)(u32 program, i32 location, i32 count, u8 transpose, const f32* value);
 
 void glInit() {
 	glClear = (GLCLEARPROC)SDL_GL_GetProcAddress("glClear");
@@ -352,6 +357,7 @@ void glInit() {
 	glProgramUniform2fv = (GLPROGRAMUNIFORM2FVPROC)SDL_GL_GetProcAddress("glProgramUniform2fv");
 	glProgramUniform3fv = (GLPROGRAMUNIFORM3FVPROC)SDL_GL_GetProcAddress("glProgramUniform3fv");
 	glProgramUniform4fv = (GLPROGRAMUNIFORM4FVPROC)SDL_GL_GetProcAddress("glProgramUniform4fv");
+	glProgramUniformMatrix4fv = (GLPROGRAMUNIFORMMATRIX4FVPROC)SDL_GL_GetProcAddress("glProgramUniformMatrix4fv");
 }
 
 // HELPERS /////////////////////////////////////////////////////////////////////
@@ -541,7 +547,7 @@ u32 gfProgramPipelineCreate(u32 vert_program = 0, u32 frag_program = 0, u32 comp
 
 void gfClear();
 
-void gfDraw(u32 program_pipeline, u32 gpu_cmd_count, const gpu_cmd_t* gpu_cmd);
+void gfDraw(u32 program_pipeline, const std::list<gpu_cmd_t> cmds);
 
 void gfFire(u32 program_pipeline, u32 count);
 
@@ -564,13 +570,16 @@ gpu_storage_t gfStorageCreateFromStruct(gpu_storage_t tbo) {
 	u32 elem_bytes = 0;
 
 #define CASE(value, width, type) \
-	case(value): elem_width = width; elem_bytes = sizeof(type); break;
+	case(value): \
+		elem_width = width; \
+		elem_bytes = sizeof(type); \
+		break;
 
 #define OF_TYPE(type) \
-	CASE(X_##type, 1, type) \
-	CASE(XY_##type, 2, type) \
-	CASE(XYZ_##type, 3, type) \
-	CASE(XYZW_##type, 4, type)
+	CASE(X_##type,		1, type) \
+	CASE(XY_##type,		2, type) \
+	CASE(XYZ_##type,	3, type) \
+	CASE(XYZW_##type,	4, type)
 
 	switch (tbo.format) {
 		OF_TYPE(b8);
@@ -810,24 +819,23 @@ void gfClear() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void gfDraw(u32 program_pipeline, u32 gpu_cmd_count, const gpu_cmd_t* gpu_cmd) {
+void gfDraw(u32 program_pipeline, const std::list<gpu_cmd_t> cmds) {
 	glBindProgramPipeline(program_pipeline);
 
-	for (u32 i = 0; i < gpu_cmd_count; ++i) {
-		gpu_cmd_t cmd = gpu_cmd[i];
-		glDrawArraysInstancedBaseInstance(GL_TRIANGLES, (i32)cmd.first, (i32)cmd.count, (i32)cmd.instance_count, cmd.instance_first);
+	for (auto cmd = cmds.begin(); cmd != cmds.end(); cmd++) {
+		glDrawArraysInstancedBaseInstance(GL_TRIANGLES, (i32)cmd->first, (i32)cmd->count, (i32)cmd->instance_count, cmd->instance_first);
 	}
 
 	glBindProgramPipeline(0);
 }
 
 void gfFire(u32 program_pipeline, u32 count) {
-	gpu_cmd_t cmd;
+	gpu_cmd_t cmd{ 0 };
 	cmd.first = 0;
 	cmd.count = count;
 	cmd.instance_first = 0;
 	cmd.instance_count = 1;
-	gfDraw(program_pipeline, 1, &cmd);
+	gfDraw(program_pipeline, std::list<gpu_cmd_t>{cmd});
 }
 
 void gfDebugCallback(u32 source, u32 type, u32 id, u32 severity, i32 length, const char* message, void* userdata) {
